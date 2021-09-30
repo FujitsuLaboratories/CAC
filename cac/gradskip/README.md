@@ -60,3 +60,6 @@ export CAC_VAR_SLOPE_THR=0.98
 export CAC_VAR_SAMPLES=200
 export CAC_BRAKING_DISTANCE=300  # Set only when using Braking Distance
 ```
+## Copyright  
+
+COPYRIGHT Fujitsu Limited 2021

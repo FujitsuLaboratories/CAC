@@ -31,3 +31,7 @@ epoch=3
 ```
 ./mpi.sh [nnodes] [arch] [bs] [learning_rate] [opt_level] [base_data_dir]
 ```
+
+## Copyright  
+
+COPYRIGHT Fujitsu Limited 2021

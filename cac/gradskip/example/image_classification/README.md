@@ -63,3 +63,7 @@ python example_imagenet.py ... --arch alexnet ...
 |--training-only|Do not evaluate|||
 |--no-checkpoints|Do not store any checkpoints, useful for benchmarking|||
 |--workspace|Path to directory where checkpoints will be stored|Any string (directory)|`./`|
+
+## Copyright  
+
+COPYRIGHT Fujitsu Limited 2021

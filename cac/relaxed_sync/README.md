@@ -180,3 +180,7 @@ pip install -r requirements.txt
 pip install -v --no-cache-dir --global-option="--pyprof" --global-option="--cpp_ext" --global-option="--cuda_ext" ./
 (then check “Successfully installed apex-0.1” is output at middle of the console output)
 ```
+
+## Copyright  
+
+COPYRIGHT Fujitsu Limited 2021

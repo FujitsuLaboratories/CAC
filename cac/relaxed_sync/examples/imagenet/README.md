@@ -181,3 +181,7 @@ cause a modest performance decrease.
 If you're curious how the network actually looks on the CPU and GPU timelines (for example, how good is the overall utilization?
 Is the prefetcher really overlapping data transfers?) try profiling `main_amp.py`.
 [Detailed instructions can be found here](https://gist.github.com/mcarilli/213a4e698e4a0ae2234ddee56f4f3f95).
+
+## Copyright  
+
+COPYRIGHT Fujitsu Limited 2021

@@ -11,23 +11,24 @@ Gradient-Skip is an approach for CNNs to skip backward calculations for layers t
 This reduces calculations in backward and communications of gradient.<br>
 You can use Gradient-Skip by simply replacing the optimizer with our SGD.<br>
 
-[Python Source](https://github.com/FujitsuLaboratories/CAC/cac/gradskip)
+[Python Source](https://github.com/FujitsuLaboratories/CAC/tree/main/cac/gradskip)
 
-[Example](https://github.com/FujitsuLaboratories/CAC/cac/gradskip/example/image_classification)
+[Example](https://github.com/FujitsuLaboratories/CAC/tree/main/cac/gradskip/example/image_classification)
 
-## 2. Auto-Pruner
+## 2. Automatic Pruner
 
-Auto-Pruner is a pruning tool for neural networks, which can determine the pruning rate of each layer automatically.<br>
+Automatic Pruner is a pruning tool for neural networks, which can determine the pruning rate of each layer automatically.<br>
 
-[Python Source](https://github.com/FujitsuLaboratories/CAC/cac/pruning)
+[Python Source](https://github.com/FujitsuLaboratories/CAC/tree/main/cac/gradskip/example/image_classification)
 
-[Example](https://github.com/FujitsuLaboratories/CAC/cac/pruning/examples)
+[Example](https://github.com/FujitsuLaboratories/CAC/tree/main/cac/pruning/examples)
 
 ## 3. Synchronous-Relaxation
+Relaxed Synchronization technique removes slow processes from the group of distributed training and prevent limiting overall training speed due to slow processes. <br>
 
-[Python Source](https://github.com/FujitsuLaboratories/CAC/cac/relaxed_sync)
+[Python Source](https://github.com/FujitsuLaboratories/CAC/tree/main/cac/relaxed_sync)
 
-[Example](https://github.com/FujitsuLaboratories/CAC/cac/relaxed_sync/examples)
+[Example](https://github.com/FujitsuLaboratories/CAC/tree/main/cac/relaxed_sync/examples/imagenet)
 
 # Requirements
 
@@ -47,7 +48,8 @@ Apex
 git clone https://github.com/FujitsuLaboratories/CAC.git
 cd CAC
 python setup.py install
-
-(CAC will be registered in PyPI at a later date and will be able to pip install)
+```
+CAC will be registered in PyPI at a later date and will be able to pip install
+```
 pip install -v --disable-pip-version-check --no-cache-dir ./
 ```
