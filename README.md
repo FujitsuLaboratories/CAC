@@ -45,11 +45,6 @@ Apex
 ### Linux
 
 ```
-git clone https://github.com/FujitsuLaboratories/CAC.git
-cd CAC
-python setup.py install
+pip install --no-cache-dir cac
 ```
-CAC will be registered in PyPI at a later date and will be able to pip install
-```
-pip install -v --disable-pip-version-check --no-cache-dir ./
-```
+
