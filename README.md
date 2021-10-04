@@ -32,7 +32,7 @@ Relaxed Synchronization technique removes slow processes from the group of distr
 
 # Requirements
 
-Python 3.6 or later
+Python 3.7 or later
 
 CUDA 10 or later
 
