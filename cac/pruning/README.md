@@ -1,4 +1,4 @@
-# Automatic Pruner Ver 1.0.0
+# Automatic Pruner Ver 1.0.001
 
 Automatic Pruner is a Python module for pruning neural networks.
 This module has the following features.
@@ -45,7 +45,7 @@ pruning
 
 ## How to run the examples
 
-Let's take `AlexNet` as an example. 
+Let's take `AlexNet` as an [example](https://github.com/FujitsuLaboratories/CAC/tree/main/cac/pruning/examples/AlexNet). 
 
 ### 1. Advance preparation
 
