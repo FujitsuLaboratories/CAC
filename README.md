@@ -19,7 +19,7 @@ You can use Gradient-Skip by simply replacing the optimizer with our SGD.<br>
 
 Automatic Pruner is a pruning tool for neural networks, which can determine the pruning rate of each layer automatically.<br>
 
-[Python Source](https://github.com/FujitsuLaboratories/CAC/tree/main/cac/gradskip/example/image_classification)
+[Python Source](https://github.com/FujitsuLaboratories/CAC/tree/main/cac/pruning)
 
 [Example](https://github.com/FujitsuLaboratories/CAC/tree/main/cac/pruning/examples)
 
