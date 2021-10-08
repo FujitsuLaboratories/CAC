@@ -47,4 +47,10 @@ Apex
 ```
 pip install --no-cache-dir cac
 ```
+### When download the code by using `git clone`
 
+```
+git clone https://github.com/FujitsuLaboratories/CAC.git
+cd ./CAC             # move to the directory where 'setup.py' is located.
+pip install -e .     # execute `pip install` after move to the directory where 'setup.py' is located. 
+```
