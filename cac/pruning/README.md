@@ -321,7 +321,7 @@ If the model compression ratio is low with the default settings, consider the fo
 
 * Increase the number of re-training epochs.
 * Change the re-training method such as learning rate scheduler, optimizer, and so on.
-* Increase acc_margin. (Note that, the accuracy after pruning is decreased if you increase `acc_margin`.)
+* Increase acc_control. (Note that, the accuracy after pruning is decreased if you increase `acc_control`.)
 
 ## Limitations  
 
