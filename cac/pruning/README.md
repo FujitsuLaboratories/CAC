@@ -251,11 +251,10 @@ Args:
                                        False: do not use DataParallel().
                                        Defaults to True.
     loss_margin (float, optional): Loss margin. Defaults to 0.1.
-    acc_margin (float, optional): Accuracy margin. Defaults to 1.0.
-    trust_radius (float, optional): Initial value of trust radius
-                                    (upper bound of 'thresholds').
+    acc_control (float, optional): Control parameter for pruned model accuracy. unit[%]. Defaults to 1.0[%].
+    upper_bound (float, optional): Initial value of upper bound of thresholds Th.
                                     Defaults to 10.0.
-    scaling_factor (float, optional): Scaling factor for trust raduis.
+    scaling_factor (float, optional): Scaling factor for 'upper_bound of threshold'.
                                       Defaults to 2.0.
     rates (list, optional): Candidates for pruning rates.
                             Defaults to None.
