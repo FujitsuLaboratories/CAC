@@ -3,7 +3,9 @@
 Automatic Pruner is a Python module for pruning neural networks.
 This module has the following features.
 * The pruning rate of each layer can be determined automatically.
-* It can also be applied to convolution layers to which BatchNorm layers are not connected and fully connected layers.
+* It can also be applied to convolution layers to which BatchNorm layers are not connected and fully connected layers.  
+* Pre-trained model data for example codes are published in following site.  
+  https://zenodo.org/record/5566792#.YWbeYrjP0uU
 
 ## Requirements
 
