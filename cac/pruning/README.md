@@ -1,11 +1,24 @@
-# Automatic Pruner Ver 1.0.001
+# Automatic Pruner Ver 1.1.0
 
 Automatic Pruner is a Python module for pruning neural networks.
 This module has the following features.
 * The pruning rate of each layer can be determined automatically.
 * It can also be applied to convolution layers to which BatchNorm layers are not connected and fully connected layers.  
-* Pre-trained model data for example codes are published in following site.  
-  https://zenodo.org/record/5566792#.YWbeYrjP0uU
+* Pre-trained model & pruned model data for example codes are published in following site.  
+  Pre-trained model : https://zenodo.org/record/5725006#.YZ5cSNDP0uU  
+  Pruned model      : https://zenodo.org/record/5725038#.YZ5cY9DP0uU  
+  
+|Dataset|Model|Pre-trained model accuracy(%)|Pruned model accuracy(%)|Pre-trained model size(MB)|Pruned model size(MB)|Model size compression ratio(%)| 
+|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+|MNIST|3-layer MLP|98.44|97.48|7.46|1.14|84.7|
+|CIFAR10|AlexNet|90.59|89.62|145.50|1.87|98.7|
+|CIFAR10|vgg11|85.70|84.71|515.23|0.80|99.8|
+|CIFAR10|vgg11_bn|92.39|91.58|112.64|2.60|97.7|
+|CIFAR10|vgg16_bn|93.78|93.82|60.04|6.26|89.6|
+|CIFAR10|ResNet18|92.62|91.71|44.78|1.56|96.5|
+|CIFAR10|ResNet32|92.63|92.70|1.92|0.69|64.0|
+|CIFAR10|ResNet56|93.39|93.40|3.52|0.93|73.5|
+|CIFAR10|ResNet110|93.68|93.70|7.12|1.31|81.7|
 
 ## Requirements
 
@@ -16,33 +29,34 @@ Automatic Pruner requires:
 * Numpy (>= 1.18.2)
 * tqdm (>= 4.62.0)
 
-## The directory structure
-
-The directory structure of the Automatic Pruner source is shown below.
+## Quick start
+### Run automatic pruner
+1. Move to sample code directory  
 ```
-pruning
-  ├── auto_prune.py  (automatic pruner main module)
-  └── examples
-     ├── AlexNet
-     │   ├── alexnet.py
-     │   ├── main.py
-     │   └── make_model.py
-     ├── MLP  (Multi layer perceptron)
-     │   ├── main.py
-     │   ├── make_model.py
-     │   └── mlp.py
-     ├── ResNet18
-     │   ├── resnet.py
-     │   ├── main.py
-     │   └── schduler.py
-     ├── VGG11
-     │   ├── main.py
-     │   ├── make_model.py
-     │   └── vgg.py
-     └── VGG11_bn
-         ├── main.py
-         ├── schduler.py
-         └── vgg_bn.py
+cd /examples/<sample>
+```
+2. Download pre-trained model from https://zenodo.org/record/5725006#.YZ5cSNDP0uU to sample code directory  
+```
+>>> ls /examples/<sample>/*.pt  
+pretrained_xxx.pt  
+```
+3. Execute `run.sh`  
+```
+chmod +x run.sh && ./run.sh
+```
+### Run inference with pruned model
+1. Move to sample code directory  
+```
+cd /examples/<sample>
+```
+2. Download pruned model from https://zenodo.org/record/5725038#.YZ5cY9DP0uU to sample code directory
+```
+>>> ls /examples/<sample>/*.pt
+pruned_xxx.pt
+```
+3. Execute `run_pruned.sh`
+```
+chmod +x run_pruned.sh && ./run_pruned.sh
 ```
 
 ## How to run the examples
@@ -220,71 +234,6 @@ weights, Afinal, n_args_channels = auto_prune(AlexNet, model_info, weights, Ab,
 For more information about model_info, refer to the `Setting for "model_info"` section.
 See the `Docstring` section for details on arguments and return values.
 
-#### Docstring
-
-The Docstring of the `auto_prune` function is shown below.
-```python
-"""Automatically decide pruning rate
-
-Args:
-    model_class (-): User-defined model class
-    model_info (collections.OrderedDict): Model information for auto_prune
-    weights_before (dict): Weights before purning
-    acc_before (float or numpy.float64): Accuracy before pruning
-    train_loader (torch.utils.data.dataloader.DataLoader): DataLoader for
-                                                           training
-    val_loader (torch.utils.data.dataloader.DataLoader): DataLoader for
-                                                         validation
-    criterion (torch.nn.modules.loss.CrossEntropyLoss, optional):
-                                             Criterion. Defaults to None.
-    optim_type (str, optional): Optimizer type. Defaults to 'SGD'.
-    optim_params (dict, optional): Optimizer parameters. Defaults to None.
-    lr_scheduler(-): Scheduler class. Defaults to None.
-    scheduler_params(dict, optional): Scheduler parameters. Defaults to None
-    update_lr(str, optional): 'epoch': Execute scheduler.step()
-                                       for each epoch.
-                              'step': Execute scheduler.step()
-                                      for each training iterarion.
-                              Defaults to 'epoch'
-    use_gpu (bool, optional): True : use gpu.
-                              False: do not use gpu.
-                              Defaults to False.
-    use_DataParallel (bool, optional): True : use DataParallel().
-                                       False: do not use DataParallel().
-                                       Defaults to True.
-    loss_margin (float, optional): Loss margin. Defaults to 0.1.
-    acc_control (float, optional): Control parameter for pruned model accuracy. unit[%]. Defaults to 1.0[%].
-    upper_bound (float, optional): Initial value of upper bound of thresholds Th.
-                                    Defaults to 10.0.
-    scaling_factor (float, optional): Scaling factor for 'upper_bound of threshold'.
-                                      Defaults to 2.0.
-    rates (list, optional): Candidates for pruning rates.
-                            Defaults to None.
-    max_iter (int, optional): Maximum number of pruning rate searching.
-    calc_iter (int, optional): Iterations for calculating gradient
-                               to derive threshold.
-                               Defaults to 100.
-    epochs (int, optional): Re-training duration in pruning rate search.
-    model_path (str, optional): Pre-trained model filepath.
-                                Defaults to None.
-    pruned_model_path (str, optional): Pruned model filepath.
-                                       Defaults to './pruned_model.pt'.
-    residual_info (collections.OrderedDict, optional): Information on
-                                                       residual connections
-                                                       Defaults to None.
-    residual_connections (bool, optional): True: the network has
-                                                  residual connections.
-                                           False: except for the above.
-                                           Defaults to False.
-
-Returns:
-    weights_before(dict): Weights after purning
-    final_acc(float): Final accuracy with searched pruned model
-    n_args_channels: Final number of channels after pruning
-"""
-```
-note) For networks with residual connections such as ResNet18, the argument `residual_connections` must be set to `True`.
-
 ### 4. How to use the model after pruning
 
 As shown in the example below, instantiate the model with the number of channels after pruning as an argument and load state_dict.
@@ -323,23 +272,13 @@ If the model compression ratio is low with the default settings, consider the fo
 
 * Increase the number of re-training epochs.
 * Change the re-training method such as learning rate scheduler, optimizer, and so on.
-* Increase acc_control. (Note that, the accuracy after pruning is decreased if you increase `acc_control`.)
+* Increase `acc_control`. (The accuracy for pruned model is decreased when `acc_control` is increased.)
+* Increase `loss_margin` in `auto_prune.py`.
 
 ## Limitations  
 
 * In the current version, the layers targeted for pruning are `torch.nn.Conv1d`, `torch.nn.Conv2d`, `torch.nn.Linear`.  
 * The `num_features` of `torch.nn.BatchNorm1d` and `torch.nn.BatchNorm2d` also be reduced when these batch normalization layers are connected to convolutional layer and the convolutional layer is pruned.
-
-* The networks that have been confirmed to work are as follows
-  * Serial networks
-    * AlexNet on CIFAR-10 `examples/AlexNet`
-    * VGG11 without batch normalization layer on CIFAR-10 `exmples/VGG11`
-    * VGG11 with batch normalization layer on CIFAR-10 `exmples/VGG11_bn`
-    * Multiple layer perceptron consisted only fully connected layers on MINIST `examples/MLP`
-  * Neural network with residual connections
-    * ResNet18 on CIFAR-10 `examples/ResNet18`
-
-* Pruning execution may fail depending on the model defined method.  
 
 ## Cautions
 
