@@ -1,4 +1,4 @@
-# main.py COPYRIGHT Fujitsu Limited 2021
+# main_pruned.py COPYRIGHT Fujitsu Limited 2021
 
 from argparse import ArgumentParser
 from collections import OrderedDict
@@ -14,7 +14,7 @@ import sys
 sys.path.append('../../')
 from auto_prune import auto_prune
 
-from alexnet import AlexNet
+from alexnet_pruned import AlexNet
 
 #===================================================================================
 parser = ArgumentParser()
@@ -24,32 +24,15 @@ parser.add_argument('--use_gpu', action='store_true',
                     help='use gpu')
 parser.add_argument('--use_DataParallel', action='store_true',
                     help='use DataParallel')
-# for training
 parser.add_argument('--data', type=str, default='./data',
                     help='path to dataset')
 parser.add_argument('--batch_size', type=int, default=128)
-parser.add_argument('--learning_rate', type=float, default=1e-3)
-parser.add_argument('--momentum', type=float, default=0.9)
-parser.add_argument('--weight_decay', type=float, default=1e-4)
-parser.add_argument('--nesterov', default=False)
-# for auto pruning
-parser.add_argument('--acc_control', type=float, default=1.0,
-                    help='control parameter for pruned model accuracy')
-parser.add_argument('--rates', nargs='*', type=float, default=[0.2, 0.1, 0.0],
-                    help='candidates for pruning rates')
-parser.add_argument('--max_search_times', type=int, default=1000,
-                    help='maximum number of times for pruning rate search')
-parser.add_argument('--epochs', type=int, default=300,
-                    help='re-training epochs')
-parser.add_argument('--model_path', type=str, default='./pretrained_cifar10_alexnet.pt',
+parser.add_argument('--model_path', type=str, default='./pruned_cifar10_alexnet.pt',
                     help='pre-trained model filepath')
-parser.add_argument('--pruned_model_path', type=str, default='./pruned_cifar10_alexnet.pt',
-                    help='pruned model filepath')
 #===================================================================================
 
 def main():
     args = parser.parse_args()
-    args.rates = ([float(f) for f in args.rates])
     print(f'args: {args}')
 
     device = 'cpu'
@@ -101,17 +84,8 @@ def main():
         print('use {} GPUs.'.format(torch.cuda.device_count()))
         model = torch.nn.DataParallel(model)
     model.to(device)
-    print('===== model: before pruning ==========')
+    print('===== model ==========')
     print(model)
-    # Model information for pruning
-    model_info = OrderedDict(conv1={'arg': 'out_ch_conv1'},
-                             conv2={'arg': 'out_ch_conv2'},
-                             conv3={'arg': 'out_ch_conv3'},
-                             conv4={'arg': 'out_ch_conv4'},
-                             conv5={'arg': 'out_ch_conv5'},
-                             fc1={'arg': 'out_ch_fc1'},
-                             fc2={'arg': 'out_ch_fc2'},
-                             fc3={'arg': None})
 
     # load weight of trained model
     if torch.cuda.device_count() > 1 and args.use_DataParallel:
@@ -121,49 +95,7 @@ def main():
 
     # calculate accuracy with non-pruning trained model
     Ab = validate(val_loader, model, device, epoch=1)
-    print('Accuracy before pruning:', Ab)
-
-    # tune pruning rate
-    print('===== start pruning rate tuning =====')
-    # set optimizer
-    optim_params = dict(lr=args.learning_rate,
-                        momentum=args.momentum,
-                        weight_decay=args.weight_decay,
-                        nesterov=args.nesterov)
-    # set LR scheduler
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR
-    scheduler_params = dict(T_max=200)
-
-    criterion = torch.nn.CrossEntropyLoss()
-
-    weights, Afinal, n_args_channels = auto_prune(AlexNet, model_info, weights, Ab,
-                                                  train_loader, val_loader, criterion,
-                                                  optim_type='SGD',
-                                                  optim_params=optim_params,
-                                                  lr_scheduler=scheduler,
-                                                  scheduler_params=scheduler_params,
-                                                  update_lr='epoch',
-                                                  use_gpu=args.use_gpu,
-                                                  use_DataParallel=args.use_DataParallel,
-                                                  acc_control=args.acc_control,
-                                                  rates=args.rates,
-                                                  max_search_times=args.max_search_times,
-                                                  epochs=args.epochs,
-                                                  model_path=args.model_path,
-                                                  pruned_model_path=args.pruned_model_path)
-
-    print('===== model: after pruning ==========')
-    print(model)
-    print('===== Results =====')
-    print('Model size before pruning (Byte):', os.path.getsize(args.model_path))
-    if os.path.exists(args.pruned_model_path):
-        print('Model size after pruning  (Byte):',
-              os.path.getsize(args.pruned_model_path))
-        print('Compression rate                : {:.3f}'.format(
-            1-os.path.getsize(args.pruned_model_path)/os.path.getsize(args.model_path)))
-    print('Acc. before pruning: {:.2f}'.format(Ab))
-    print('Acc. after pruning : {:.2f}'.format(Afinal))
-    print('Arguments name & number of channels for pruned model: ', n_args_channels)
+    print('Accuracy :', Ab)
 
 def validate(val_loader, model, device, epoch):
     model.eval()
