@@ -9,62 +9,59 @@ from torchvision import transforms as T
 import torchvision.datasets as datasets
 from tqdm import tqdm
 
-from cac import auto_prune
-from vgg_bn import VGG11
+#from cac import auto_prune
+import sys
+sys.path.append('../../')
+from auto_prune import auto_prune
+
+from vgg11_bn import VGG11_BN
 from schduler import WarmupCosineLR
 
+#===================================================================================
+parser = ArgumentParser()
+parser.add_argument('--workers', default=8, type=int,
+                    help='number of data loading workers')
+parser.add_argument('--use_gpu', action='store_true',
+                    help='use gpu')
+parser.add_argument('--use_DataParallel', action='store_true',
+                    help='use DataParallel')
+# for training
+parser.add_argument('--data', type=str, default='./data',
+                    help='path to dataset')
+parser.add_argument('--batch_size', type=int, default=256)
+parser.add_argument('--learning_rate', type=float, default=1e-2)
+parser.add_argument('--momentum', type=float, default=0.9)
+parser.add_argument('--weight_decay', type=float, default=1e-2)
+# for auto pruning
+parser.add_argument('--acc_control', type=float, default=1.0,
+                    help='control parameter for pruned model accuracy')
+parser.add_argument('--rates', nargs='*', type=float, default=[0.2, 0.1, 0.0],
+                    help='candidates for pruning rates')
+parser.add_argument('--max_search_times', type=int, default=1000,
+                    help='maximum number of times for pruning rate search')
+parser.add_argument('--epochs', type=int, default=300,
+                    help='re-training epochs')
+parser.add_argument('--model_path', type=str, default='./pretrained_cifar10_vgg11_bn.pt',
+                    help='pre-trained model filepath')
+parser.add_argument('--pruned_model_path', type=str, default='./pruned_cifar10_vgg11_bn.pt',
+                    help='pruned model filepath')
+#===================================================================================
 
 
-if __name__ == '__main__':
-    parser = ArgumentParser()
-    parser.add_argument('--workers', default=8, type=int,
-                        help='number of data loading workers (default: 8)')
-    parser.add_argument('--data', type=str, default='./data',
-                        help='path to dataset')
-    parser.add_argument('--batch_size', type=int, default=256)
-    parser.add_argument('--learning_rate', type=float, default=1e-2)
-    parser.add_argument('--momentum', type=float, default=0.9)
-    parser.add_argument('--weight_decay', type=float, default=1e-2)
-    parser.add_argument('--acc_margin', type=float, default=1.0,
-                        help='accuracy margin')
-    parser.add_argument('--use_gpu', action='store_true',
-                        help='use gpu')
-    parser.add_argument('--use_DataParallel', action='store_true',
-                        help='use DataParallel')
-    parser.add_argument('--loss_margin', type=float, default=0.1,
-                        help='loss margin')
-    parser.add_argument('--trust_radius', type=float, default=10.0,
-                        help="initial value of trust radius(upper bound of 'thresholds')")
-    parser.add_argument('--scaling_factor', type=float, default=2.0,
-                        help='scaling factor for trust raduis')
-    parser.add_argument('--rates', nargs='*', type=float, default=[0.2, 0.1, 0.0],
-                        help='candidates for pruning rates')
-    parser.add_argument('--max_iter', type=int, default=1000,
-                        help='maximum number of pruning rate searching')
-    parser.add_argument('--calc_iter', type=int, default=100,
-                        help='iterations for calculating gradient to derive threshold')
-    parser.add_argument('--epochs', type=int, default=100)
-    parser.add_argument('--model_path', type=str, default='./vgg11_bn.pt',
-                        help='pre-trained model filepath')
-    parser.add_argument('--pruned_model_path', type=str, default='./pruned_model.pt',
-                        help='pruned model filepath')
-
+def main():
     args = parser.parse_args()
     args.rates = ([float(f) for f in args.rates])
     print(f'args: {args}')
 
-    main(args)
-
-
-def main(args):
     device = 'cpu'
     if args.use_gpu:
+        torch.backends.cudnn.benchmark = True
         device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print('device: ', device)
 
     print('===== load data ===================')
     norm_mean = (0.4914, 0.4822, 0.4465)
-    norm_std = (0.2471, 0.2435, 0.2616)
+    norm_std  = (0.2471, 0.2435, 0.2616)
     train_transform = T.Compose(
             [
                 T.RandomCrop(32, padding=4),
@@ -107,7 +104,7 @@ def main(args):
         )
 
     # load model
-    model = VGG11()
+    model = VGG11_BN()
     model.load_state_dict(torch.load(
         args.model_path, map_location=device), strict=True)
 
@@ -147,7 +144,7 @@ def main(args):
 
     # calculate accuracy with unpruned trained model
     Ab = validate(val_loader, model, device, epoch=1)
-    print('Acc:', Ab)
+    print('Accuracy before pruning: ', Ab)
 
     # tune pruning rate
     print('===== start pruning rate tuning =====')
@@ -161,22 +158,18 @@ def main(args):
                             max_epochs=total_steps)
     criterion = torch.nn.CrossEntropyLoss()
 
-    weights, Afinal, n_args_channels = auto_prune(VGG11, model_info, weights, Ab,
+    weights, Afinal, n_args_channels = auto_prune(VGG11_BN, model_info, weights, Ab,
                                                   train_loader, val_loader, criterion,
                                                   optim_type='SGD',
                                                   optim_params=optim_params,
                                                   lr_scheduler=scheduler,
                                                   scheduler_params=scheduler_params,
-                                                  update_lr='step',
+                                                  update_lr='iter',
                                                   use_gpu=args.use_gpu,
                                                   use_DataParallel=args.use_DataParallel,
-                                                  loss_margin=args.loss_margin,
-                                                  acc_margin=args.acc_margin,
-                                                  trust_radius=args.trust_radius,
-                                                  scaling_factor=args.scaling_factor,
+                                                  acc_control=args.acc_control,
                                                   rates=args.rates,
-                                                  max_iter=args.max_iter,
-                                                  calc_iter=args.calc_iter,
+                                                  max_search_times=args.max_search_times,
                                                   epochs=args.epochs,
                                                   model_path=args.model_path,
                                                   pruned_model_path=args.pruned_model_path,
@@ -193,28 +186,7 @@ def main(args):
             1-os.path.getsize(args.pruned_model_path)/os.path.getsize(args.model_path)))
     print('Acc. before pruning: {:.2f}'.format(Ab))
     print('Acc. after pruning : {:.2f}'.format(Afinal))
-    print('Arguments of pruned model: ', n_args_channels)
-
-
-def train(train_loader, model, device, criterion, optimizer, epoch):
-    model.train()
-    hit = 0
-    total = 0
-    with tqdm(train_loader, leave=False) as pbar:
-        for _, (images, targets) in enumerate(pbar):
-            pbar.set_description('Epoch {} Training'.format(epoch))
-            images = images.to(device)
-            targets = targets.to(device)
-            outputs = model(images)
-            loss = criterion(outputs, targets)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            outClass = outputs.cpu().detach().numpy().argmax(axis=1)
-            hit += (outClass == targets.cpu().numpy()).sum()
-            total += len(targets)
-            pbar.set_postfix({'train Acc': hit / total * 100})
-
+    print('Arguments name & number of channels for pruned model: ', n_args_channels)
 
 def validate(val_loader, model, device, epoch):
     model.eval()
@@ -233,4 +205,7 @@ def validate(val_loader, model, device, epoch):
                 val_acc = hit / total * 100
                 pbar.set_postfix({'valid Acc': val_acc})
     return val_acc
+
+if __name__ == '__main__':
+    main()
 
