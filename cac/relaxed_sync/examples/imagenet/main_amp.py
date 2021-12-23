@@ -260,7 +260,7 @@ def main():
 
         model.set_relaxed_pg(epoch, min_num_processes=2)
 
-        train_loader, val_loader = model.rearrage_data_loaders(train_loader, val_loader)
+        train_loader, val_loader = model.rearrange_data_loaders(train_loader, val_loader)
         args.lr = model.adjust_lr_by_procs(init_lr)
 
         # train for one epoch

@@ -171,7 +171,6 @@ def main():
 
     model_info['fc'] = {'arg': None, 'prev': ['layer4.0.bn2', 'layer4.0.downsample.1', 'layer4.1.bn2']}
 
-
     # load weight of trained model
     if torch.cuda.device_count() > 1 and args.use_DataParallel:
         weights = copy.deepcopy(model.module.state_dict())

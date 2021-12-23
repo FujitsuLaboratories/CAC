@@ -1,0 +1,1 @@
+machine1 slots=1
