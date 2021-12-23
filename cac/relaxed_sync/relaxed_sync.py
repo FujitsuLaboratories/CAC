@@ -62,10 +62,10 @@ class RelaxedSyncDistributedDataParallel(DDP):
                  prof=False,
                  relaxed_sync_threshold=3.0,
                  relaxed_sync_mode_threshold=0.8,
-                 sleep_process_start_epoch=10,
+                 sleep_process_start_epoch=10, 
                  num_sleep_processes=1,
                  simulate_slow_process=0,
-                 sleep_time=0.3):
+                 sleep_time=0):
         super(RelaxedSyncDistributedDataParallel, self).__init__(module,
                                                                  message_size,
                                                                  delay_allreduce,
@@ -102,30 +102,45 @@ class RelaxedSyncDistributedDataParallel(DDP):
         self.relaxed_process_ids = []
         self.epoch = 0
 
-    def set_relaxed_pg(self, epoch, min_num_processes=2, master_skip=False, new_pg=True):
+        self.fwd_cnt = 0
+
+    def set_relaxed_pg(self, epoch, min_num_processes=1, master_skip=False, new_pg=True):
         group = self.relaxed_pg if self.relaxed_pg is not None else dist.group.WORLD
         self.epoch = epoch
-        #if dist.get_rank(group) == 0:
-        #    print("set_relaxed_pg: threshold:", self.relaxed_sync_threshold)
+
+        if self.simulate_slow_process == 1 and self.sleep_time == 0 and self.fwd_cnt > 0:
+            self.sleep_time = self.comp_time/self.fwd_cnt * 30
+            self.fwd_cnt = 0
 
         # calculate average computation time in the group
-        if dist.get_rank(group) >= 0:
-            comp_time_list = [torch.cuda.FloatTensor([0.]) for _ in range(dist.get_world_size(group))]
-            comp_time = torch.cuda.FloatTensor([self.comp_time])
-            dist.all_gather(comp_time_list, comp_time, group)
-            #average_time = sum(comp_time_list) / dist.get_world_size(group)
-            average_time = torch.median(torch.stack(comp_time_list), dim=0).values
+        if dist.get_world_size(group) == 1: 
+                return 
+        if dist.get_world_size(group) == 2: # assume smallest group size is 2
+            if dist.get_rank(group) >= 0:
+                comp_time_list = [torch.cuda.FloatTensor([0.]) for _ in range(dist.get_world_size(group))]
+                comp_time = torch.cuda.FloatTensor([self.comp_time])
+                dist.all_gather(comp_time_list, comp_time, group)
+                average_time = torch.min(torch.stack(comp_time_list), dim=0).values
+        elif dist.get_world_size(group) > 2:
+            if dist.get_rank(group) >= 0:
+                comp_time_list = [torch.cuda.FloatTensor([0.]) for _ in range(dist.get_world_size(group))]
+                comp_time = torch.cuda.FloatTensor([self.comp_time])
+                dist.all_gather(comp_time_list, comp_time, group)
+                #average_time = sum(comp_time_list) / dist.get_world_size(group)
+                average_time = torch.median(torch.stack(comp_time_list), dim=0).values
 
         #if dist.get_rank(group) == 0:
         #    print("global_rank:", dist.get_rank(), ", rank_in_group:", dist.get_rank(group),
         #          ", set_relaxed_pg: average_time:", average_time.item(), ", my_time:", self.comp_time, ", comp_time_list:", comp_time_list)
 
         # get process ids which satisfies criteria with threshold
+        # do not skip master if master_skip is false
         is_not_slow = 1 if self.relaxed_sync_threshold < 0.0 \
-            or dist.get_rank(group) >= 0 and self.comp_time > 0 \
+            or dist.get_rank(group) >= 0 and average_time.item() > 0.0 \
             and self.comp_time <= average_time.item() * self.relaxed_sync_threshold \
             else 0
-        # do not skip master if master_skip is false
+        if average_time.item() == 0.0 and dist.get_rank(group) >=0:
+           is_not_slow = 1
         if not master_skip and dist.get_rank(group) == 0:
             is_not_slow = 1
         if dist.get_rank(group) >= 0 and not is_not_slow and average_time.item() > 0.0:
@@ -138,15 +153,10 @@ class RelaxedSyncDistributedDataParallel(DDP):
         # dist.gather(is_relaxed_process, is_relaxed_process_list, dst=dist.get_rank(group), group=group)
         dist.all_gather(is_relaxed_process_list, is_relaxed_process, group)
 
-        #if dist.get_rank() == 0:
-        #    print("comm_size: ", dist.get_world_size(group), "set_relaxed_pg")
-
         relaxed_process_ids = []
         for rank in range(dist.get_world_size(group)):
             if is_relaxed_process_list[rank].item() > 0:
                 relaxed_process_ids.append(self.relaxed_process_ids[rank] if self.relaxed_pg is not None else rank)
-        #if dist.get_rank() == 0 and self.epoch > 0:
-        #    print("comm_size: ", len(relaxed_process_ids), ", relaxed_process_ids: ", relaxed_process_ids)
 
         # broadcast to all the processes in the default process group
         # do not use the gather->broadcast but use all_gather because NCCL does not support gather
@@ -375,7 +385,7 @@ class RelaxedSyncDistributedDataParallel(DDP):
         self.comm_time = 0.001 * elapsed_time_ms
 
     def forward(self, *inputs, **kwargs):
-        start_time_Throuput = time.time()
+        start_time_Throughput = time.time()
         result = self.module(*inputs, **kwargs)
 
         if self.prof:
@@ -469,8 +479,9 @@ class RelaxedSyncDistributedDataParallel(DDP):
         if self.prof:
             torch.cuda.nvtx.range_pop()
 
-        #self.comp_time = time.time() - start_time_Throuput
-        self.comp_time += time.time() - start_time_Throuput
+        self.comp_time += time.time() - start_time_Throughput
+        if self.simulate_slow_process == 1:
+            self.fwd_cnt += 1
         return result
 
     def TrainDataLoader(self,

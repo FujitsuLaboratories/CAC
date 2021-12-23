@@ -44,7 +44,9 @@ def get_option():
                         help='number of total epochs to run')
     argparser.add_argument('-lr', '--learning_rate', type=float, default=0.01,
                         help='learning rate')
-    argparser.add_argument("--local_rank", type=int)
+    argparser.add_argument('--local_rank', type=int)
+    argparser.add_argument('-S', '--single_gpu', action='store_true',
+                        help='single gpu mode')
     return argparser.parse_args()
 
 
@@ -56,7 +58,7 @@ def train_and_validate(model, criterion, optimizer, train_loader, val_loader, ar
 
         train_loss, train_acc, val_loss, val_acc = 0, 0, 0, 0
 
-        model.set_relaxed_pg(epoch, min_num_processes=2, master_skip=False)
+        model.set_relaxed_pg(epoch, min_num_processes=1, master_skip=False)
         train_loader, val_loader = model.rearrange_data_loaders(train_loader, val_loader)
         args.lerarning_rate = model.adjust_lr_by_procs(args.learning_rate)
 
@@ -122,6 +124,8 @@ def main():
     args = get_option()
 
     torch.manual_seed(args.local_rank)
+    if args.single_gpu:
+        args.local_rank = 0
     torch.cuda.set_device(args.local_rank)
 
     args.distributed = False

@@ -1,2 +1,1 @@
-dgx3 slots=1
-dgx4 slots=1
+machine1 slots=1
