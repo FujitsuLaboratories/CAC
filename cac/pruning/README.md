@@ -69,13 +69,12 @@ Perform the following procedure.
 * Clone this Github or download the source code set.
 * Launch a suitable terminal and change to the `examples/AlexNet` directory.
 
-### 2. Creating a pre-trained model for pruning
+### 2. Preparing a pre-trained model for pruning
 
 Please prepare your own "pre-trained model" for pruning.  
 Also, set the path for pre-trained model on args.model_path in main.py in each examples.  
-\* Pretrained model files will be available soon.
 
-You can also use model creating scipts executing following command in some examples. 
+You can also use pre-trained model by CIFAR-10 creating scripts executing following command in some examples. 
 ```python
 python3 make_model.py
 ```
@@ -135,7 +134,7 @@ Other samples stored in `examples` directory can be executed same procedure as t
 `auto_prune.py` assumes that the model is defined as a class that inherits from `torch.nn.Module`.
 To apply `auto_prune.py`, it is necessary to make the following changes to the user-defined class.
 * Add the argument `out_channels` of the torch.nn.Conv2d (or Conv1d) layer and the argument` out_features` of the torch.Linear layer to the argument of the `__init __` method.This allows you to specify out_channels and out_features values for each layer when instantiating.
-* The number of outputs in the final layer is fixed. In the case of CIFAR10, the number of outputs in the final layer is 10.
+* The number of outputs in the final layer is fixed. In the case of CIFAR-10, the number of outputs in the final layer is 10.
 * Adjust the input / output of layers that are not subject to pruning in accordance with the above changes.
 We recommend you to change your model file by referring the model file on the `examples` directory such as `/examples/AlexNet/alexnet.py` and `/examples/ResNet18/resnet.py`.
 
@@ -147,7 +146,7 @@ The model_info defined in the sample code of AlexNet `/examples/AlexNet/main.py`
 ```python
 from collections import OrderedDict
 # Model information for pruning
-model_info = OrderedDict(conv1={'arg': 'out_ch_conv1'},  # layer 1
+model_info = OrderedDict(conv1={'arg': 'out_ch_conv1'},
                          conv2={'arg': 'out_ch_conv2'},
                          conv3={'arg': 'out_ch_conv3'},
                          conv4={'arg': 'out_ch_conv4'},
@@ -232,7 +231,6 @@ weights, Afinal, n_args_channels = auto_prune(AlexNet, model_info, weights, Ab,
                                               train_loader, val_loader, criterion)
 ```
 For more information about model_info, refer to the `Setting for "model_info"` section.
-See the `Docstring` section for details on arguments and return values.
 
 ### 4. How to use the model after pruning
 
