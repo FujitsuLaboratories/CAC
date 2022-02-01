@@ -1,75 +1,86 @@
-# auto-pruner Ver 0.0.0
-(江藤コメント:↑は説明のための仮名です、正式名が決まりましたら差し替えてください。)
+# Automatic Pruning Ver 1.1.0
 
-auto-prunerは、ニューラルネットワークをpruningするためのPythonモジュールである。  
-このモジュールは、以下の特長を持つ。
-* 各レイヤのpruning率を自動的に決定することができる。
-* BatchNormレイヤが接続されていない畳込みレイヤや、全結合レイヤにも適用できる。
-
-(江藤コメント:↑の特長は、坂井さんに頂いた資料からの抜粋です。)
+Automatic Pruning はニューラルネットワークのプルーニングを実行するPythonモジュールです。  
+このモジュールの特徴は、下記のとおりです。  
+* 各レイヤのプルーニング率を自動的に決定することができる。  
+* structured pruningを実行する
+  * 畳み込み層はチャネル単位でプルーニング、全結合層はニューロン単位でプルーニングを行う。
+* サンプルコードに使用する事前学習済みモデルとプルーニング済みモデルは下記サイトからダウンロードできます。    
+  事前学習済みモデル     : https://zenodo.org/record/5725006#.YZ5cSNDP0uU  
+  プルーニング済みモデル : https://zenodo.org/record/5725038#.YZ5cY9DP0uU  
+  
+|Dataset|Model|Pre-trained model accuracy(%)|Pruned model accuracy(%)|Pre-trained model size(MB)|Pruned model size(MB)|Model size compression ratio(%)| 
+|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+|MNIST|3-layer MLP|98.44|97.48|7.46|1.14|84.7|
+|CIFAR10|AlexNet|90.59|89.62|145.50|1.87|98.7|
+|CIFAR10|vgg11|85.70|84.71|515.23|0.80|99.8|
+|CIFAR10|vgg11_bn|92.39|91.58|112.64|2.60|97.7|
+|CIFAR10|vgg16_bn|93.78|93.82|60.04|6.26|89.6|
+|CIFAR10|ResNet18|92.62|91.71|44.78|1.56|96.5|
+|CIFAR10|ResNet32|92.63|92.70|1.92|0.69|64.0|
+|CIFAR10|ResNet56|93.39|93.40|3.52|0.93|73.5|
+|CIFAR10|ResNet110|93.68|93.70|7.12|1.31|81.7|
 
 ## Requirements
+* Python  >= 3.6
+* Pytorch >= 1.6
+* Torchvision >= 0.6.0+cu101
+* Numpy  >= 1.18.2
+* tqdm   >= 4.62.0
 
-auto-pruner requires:
-* Python (>= 3.6.7)
-* Torch (>= 1.5.0a0+ba48f58)
-* Torchvision (>= 0.6.0+cu101)
-* Numpy (>= 1.18.2)
-
-(江藤コメント:↑mattermostでご相談させていただいたように坂井さん環境で動作確認ができたバージョンに更新をお願いいたします)
-
-## ディレクトリ構成
-
-auto-prunerのソースのディレクトリ構成を以下に示す。
+## Quick start
+### プルーニングの実行
+1. サンプルコードのディレクトリに移動する。  
 ```
-cac_pruning
-  ├── auto_prune.py  (auto-pruner本体)
-  └── examples  (サンプル)
-     ├── AlexNet
-     │   ├── alexnet.py
-     │   ├── main.py
-     │   └── make_model.py
-     ├── MLP  (マルチレイヤパーセプトロン)
-     │   ├── main.py
-     │   ├── make_model.py
-     │   ├── mlp.pt
-     │   └── mlp.py
-     ├── ResNet18
-     │   ├── resnet.py
-     │   ├── resnet18.pt
-     │   ├── main.py
-     │   └── schduler.py
-     ├── VGG11
-     │   ├── main.py
-     │   ├── make_model.py
-     │   └── vgg.py
-     └── VGG11_bn
-         ├── main.py
-         ├── schduler.py
-         └── vgg_bn.py
+cd /examples/<sample>
+```
+2. 事前学習済みモデルを https://zenodo.org/record/5725006#.YZ5cSNDP0uU から、サンプルコードのディレクトリにダウンロードする。  
+```
+>>> ls /examples/<sample>/*.pt  
+pretrained_xxx.pt  
+```
+3. `run.sh`を実行する。  
+```
+chmod +x run.sh && ./run.sh
+```
+### プルーニング済みモデルの推論の実行
+1. サンプルコードのディレクトリに移動する。  
+```
+cd /examples/<sample>
+```
+2. プルーニング済みモデルを https://zenodo.org/record/5725038#.YZ5cY9DP0uU から、サンプルコードのディレクトリにダウンロードする。
+```
+>>> ls /examples/<sample>/*.pt
+pruned_xxx.pt
+```
+3. `run_pruned.sh`を実行する。
+```
+chmod +x run_pruned.sh && ./run_pruned.sh
 ```
 
-## サンプルの実行方法
+## サンプルコードの実行方法
 
-サンプルの`AlexNet`を例に説明する。  
+サンプルコードの[`AlexNet`](https://github.com/FujitsuLaboratories/CAC/tree/main/cac/pruning/examples/AlexNet)を例に説明する。  
 
 ### 1. 事前準備
 
-以下の手順を実施する。
+初めに、以下の手順を実施してください。
 * 本GithubをClone、もしくはソースコード一式をダウンロードする。  
 * 適当なターミナルを起動し、`examples\AlexNet`ディレクトリに移動する。  
 
-### 2. モデルの作成
+### 2. プルーニング対象となる事前学習済みモデルの準備
 
-(江藤コメント:重みの格納場所が決まったら本項を重みの読み込みの説明に書き換え、make_model.pyも削除して良いかもしれません。)  
+プルーニング対象となる事前学習済みモデルを準備してください。
+事前学習済みモデルのパスを、`main.py`中の引数`args.model_path`に設定してください。
+サンプルコード向けの事前学習済みモデルは、https://zenodo.org/record/5725006#.YZ5cSNDP0uU からダウンロード可能です。
 
-モデルの作成が未実施の場合、以下のコマンドを実行して、モデルを作成しておく。  
+以下のコマンドを実行することで、CIFAR-10による事前学習済みモデルを作成することもできます。  
 ```bash
 python3 make_model.py
 ```   
 
-### 3. pruningの実行  
-ターミナルで、以下のコマンドを実行する。  
+### 3. プルーニングの実行  
+ターミナルで、以下のコマンドを実行してください。  
 ```bash
 # On GPU
 python3 main.py --use_gpu --use_DataParallel
@@ -114,32 +125,25 @@ Arguments of pruned model:  {'out_ch_conv1': 41, 'out_ch_conv2': 105, 'out_ch_co
 ```
 注) `model: after pruning`に表示されるモデルの各レイヤのチャネル数や`Results`の各数値は、実行環境等により異なることがある。
 
-`examples`ディレクトリに格納している他のサンプルも、AlexNetと同様の手順で実行可能である。  
-ただし、`VGG11_bnとResNet18`のサンプルにはmake_model.pyが存在しないため、  
-重みのファイルを`hogehoge`からダウンロードする必要がある。  
-(江藤コメント:↑重みの提供方法が決まったら記載を変更してください)
+`examples`ディレクトリに格納している他のサンプルも、AlexNetと同様の手順で実行可能です。  
 
-## ユーザーモデルのpruning方法
-
-注) pruning可能なモデルの構成には制限がある(`Limitations`の項を参照)
-
+## ユーザーが用意するモデルのプルーニング方法
 ### 1. モデル定義の変更  
-
-auto_pruneでは、モデルが`torch.nn.Moduleを継承したclass`として定義されていることを前提とする。  
-auto_prunerを適用するためには、ユーザーが定義したclassに対して以下の変更を行う必要がある。  
+`auto_prune.py`は、モデルが`torch.nn.Moduleを継承したclass`として定義されていることを前提とします。  
+`auto_prune.py`を適用するためには、ユーザーが定義したclass(例えば`/examples/AlexNet/alexnet.py`で定義している`class AlexNet`)に対して以下の変更を行う必要があります。  
 * torch.nn.Conv2d(or Conv1d)レイヤの引数`out_channels`とtorch.Linearレイヤの引数`out_features`を`__init__`メソッドの引数にする。  
 これにより、インスタンス化の際に各レイヤのout_channelsとout_featuresの値を指定できるようになる。
-* 最終レイヤの出力数は固定とする。CIFAR10の場合は、最終レイヤの出力数は10である。  
+* 最終レイヤの出力数は固定とする。例えばCIFAR-10の場合、最終レイヤの出力数は10とする。  
 * 上記の変更に合わせて、pruning対象外のレイヤの入出力を変更する。  
 
 ### 2. model_infoの設定
-
-model_infoは、pruningするネットワークの構成情報である。auto_prunerは、この情報を元にpruningを行う。  
-以下にAlexNetのサンプルのmodel_infoを示す。
+各サンプルコードを実行する`main.py`中で記載しているmodel_infoは、プルーニング対象となるモデルの構成情報となります。
+`auto_prune.py`は、この情報を元にプルーニングを行います。  
+例えば、`/examples/AlexNet/main.py`に記載しているmodel_infoは下記となります。
 ```python
 from collections import OrderedDict
 # Model information for pruning
-model_info = OrderedDict(conv1={'arg': 'out_ch_conv1'},  # 1レイヤ
+model_info = OrderedDict(conv1={'arg': 'out_ch_conv1'}, 
                          conv2={'arg': 'out_ch_conv2'},
                          conv3={'arg': 'out_ch_conv3'},
                          conv4={'arg': 'out_ch_conv4'},
@@ -151,10 +155,10 @@ model_info = OrderedDict(conv1={'arg': 'out_ch_conv1'},  # 1レイヤ
 
 * 上記のように、ネットワークの各レイヤ名とその出力引数名との対応を、`OrderedDict`で定義する。  
 OrderedDictは、Python標準ライブラリの`collections`に含まれるclassである。  
-* OrderedDictに記載する各レイヤは、ネットワークの順伝播の順に記述しなければならない。  
+* OrderedDictに記載する各レイヤは、ネットワークの順伝播の順に記述する。  
 これによって、各レイヤの接続順を表現する。
-* 記述対象のレイヤは、`torch.nn.Conv2d(or Conv1d), torch.nn.Linear, torch.nn.BatchNorm2d(or BatchNorm1d)`である。  
-`DropoutレイヤやReLuレイヤ等は記述しないこと。`
+* 記述対象のレイヤは、`torch.nn.Conv1d`, `torch.nn.Conv2d`, `torch.nn.BatchNorm1d`, `torch.nn.BatchNorm2d`, `torch.nn.Linear`である。  
+`DropoutレイヤやReLuレイヤ等の情報はmodel_infoに記述しないでください。`
 * OrderedDictのkeyには、モデルクラスで定義した各レイヤ名(インスタンス変数名)が入る。  
 ただし、`torch.nn.Sequential`等を使って複数のレイヤをまとめて定義する場合は、注意が必要である。  
 その場合、個々のレイヤ名が自動で命名される。  
@@ -216,78 +220,11 @@ from auto_prune import auto_prune
 weights, Afinal, n_args_channels = auto_prune(AlexNet, model_info, weights, Ab,
                                               train_loader, val_loader, criterion)
 ```
-model_infoの指定方法は、`model_infoの設定`の項を参照。  
-引数と返り値の詳細は`Docstring`の項を参照。  
+model_infoの指定方法は、`model_infoの設定`の項を参照してください。 
 
-#### Docstring
+### 4. プルーニング後のモデルの使用方法
 
-auto_pruning関数のDocstringを以下に示す。
-```python
-"""Automatically decide pruning rate
-
-Args:
-    model_class (-): User-defined model class
-    model_info (collections.OrderedDict): Model information for auto_prune
-    weights_before (dict): Weights before purning
-    acc_before (float or numpy.float64): Accuracy before pruning
-    train_loader (torch.utils.data.dataloader.DataLoader): DataLoader for
-                                                           training
-    val_loader (torch.utils.data.dataloader.DataLoader): DataLoader for
-                                                         validation
-    criterion (torch.nn.modules.loss.CrossEntropyLoss, optional):
-                                             Criterion. Defaults to None.
-    optim_type (str, optional): Optimizer type. Defaults to 'SGD'.
-    optim_params (dict, optional): Optimizer parameters. Defaults to None.
-    lr_scheduler(-): Scheduler class. Defaults to None.
-    scheduler_params(dict, optional): Scheduler parameters. Defaults to None
-    update_lr(str, optional): 'epoch': Execute scheduler.step()
-                                       for each epoch.
-                              'step': Execute scheduler.step()
-                                      for each training iterarion.
-                              Defaults to 'epoch'
-    use_gpu (bool, optional): True : use gpu.
-                              False: do not use gpu.
-                              Defaults to False.
-    use_DataParallel (bool, optional): True : use DataParallel().
-                                       False: do not use DataParallel().
-                                       Defaults to True.
-    loss_margin (float, optional): Loss margin. Defaults to 0.1.
-    acc_margin (float, optional): Accuracy margin. Defaults to 1.0.
-    trust_radius (float, optional): Initial value of trust radius
-                                    (upper bound of 'thresholds').
-                                    Defaults to 10.0.
-    scaling_factor (float, optional): Scaling factor for trust raduis.
-                                      Defaults to 2.0.
-    rates (list, optional): Candidates for pruning rates.
-                            Defaults to None.
-    max_iter (int, optional): Maximum number of pruning rate searching.
-    calc_iter (int, optional): Iterations for calculating gradient
-                               to derive threshold.
-                               Defaults to 100.
-    epochs (int, optional): Re-training duration in pruning rate search.
-    model_path (str, optional): Pre-trained model filepath.
-                                Defaults to None.
-    pruned_model_path (str, optional): Pruned model filepath.
-                                       Defaults to './pruned_model.pt'.
-    residual_info (collections.OrderedDict, optional): Information on
-                                                       residual connections
-                                                       Defaults to None.
-    residual_connections (bool, optional): True: the network has
-                                                  residual connections.
-                                           False: except for the above.
-                                           Defaults to False.
-
-Returns:
-    weights_before(dict): Weights after purning
-    final_acc(float): Final accuracy with searched pruned model
-    n_args_channels: Final number of channels after pruning
-"""
-```
-`注) ResNet18などの残差結合を含むネットワークの場合、引数residual_connectionsをTrueに設定する必要がある。`
-
-### 4. pruning後のモデルの使用方法
-
-以下の例のように、pruning後のチャネル数を引数としてモデルをインスタンス化し、state_dictをロードする。
+以下の例のように、pruning後のチャネル数を引数としてモデルをインスタンス化し、state_dictをロードしてください。
 ```python
 from alexnet import AlexNet
 model = AlexNet(**n_args_channels)  # n_args_channelsはauto_prune関数の返り値
@@ -302,7 +239,7 @@ model.load_state_dict(torch.load(pruned_model_path), strict=True)
 このとき、state_dictは単なるOrderedDict型であり、必要に応じてkeyの変更が可能である。  
 モデルのkeyは`model.state_dict().keys()`で確認できる。  
 
-### 特定のレイヤをpruning対象から除外
+### 特定のレイヤをpruning対象から除外する方法
 
 model_infoに、`'prune': False`を追加することで、特定のレイヤをpruning対象から除外することができる。  
 例えば、AlexNetのmodel_infoで以下のように指定すると、`conv1, conv3, conv5, fc1`はpruning対象から除外される。
@@ -318,35 +255,22 @@ model_info = OrderedDict(conv1={'arg': 'out_ch_conv1', 'prune': False},
 ```
 
 ### モデルの圧縮率が低いとき
-(江藤コメント: mattermostで相談させていただいた通り、まず私の思うところを書いていますので、ご確認ください⇒坂井さん)  
-
 既定の設定でモデルの圧縮率が低い場合は、以下の対応を検討すること。
 
-* epochsを増やす
-* trust_radiusを増やす
-* acc_marginを増やす(pruning後のAcc低下につながるため、要注意)
+* 再訓練時のepoch数を増やす。再訓練時のepoch数は`/examples/<sample>/main.py`に記載している引数`args.epochs`で設定可能。
+* 再訓練時のlearning rate schedulerやoptimizerなどの設定を変える。
+* `/examples/<sample>/main.py`に記載している引数`args.acc_control`の値を増やす。
+  * プルーニングされたモデルの精度は、`args.acc_control`の値を増やすほど劣化します。
 
 ## Limitations  
+* pruning対象とするレイヤは、`torch.nn.Conv1d`, `torch.nn.Conv2d`, `torch.nn.Linear`のみ。  
+  * ただし、畳み込み層に続いて接続される`torch.nn.BatchNorm1d`と`torch.nn.BatchNorm2d`のnum_featuresについては、接続する畳み込み層がプルーニングされた場合は同時にプルーニングする。
 
-* pruning対象とするレイヤは、torch.nn.Conv2d(or Conv1d))レイヤとtorch.nn.Linearレイヤのみ。  
-ただし、BatchNorm2d(or BatchNorm1d)のnum_featuresも併せて削減する。
-
-* 動作確認済みのネットワークは以下の通り
-  * シリアルなネットワーク
-    * AlexNet(examples/AlexNet)
-    * BatchNormレイヤなしのVGG11(exmples/VGG11)
-    * BatchNormレイヤありのVGG11(exmples/VGG11_bn)
-    * 全結合レイヤのみで構成されるニューラルネット(examples/MLP)
-  * 残差結合有りのネットワーク
-    * ResNet18(examples/ResNet18)
-
-* モデルの定義方法によっては、pruning実行にエラーする可能性あり。  
 
 ## Cautions
 
-* 付属のサンプルは、本モジュールの効果を確認するためのものであり、実用には適さない場合がある。
 * 本Readmeに記載しているコマンドは、実行環境に依存する。
 
 ## Copyright  
 
-COPYRIGHT Fujitsu Limited 2021
+COPYRIGHT Fujitsu Limited 2022
