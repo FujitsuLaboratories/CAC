@@ -1,5 +1,6 @@
-# Automatic Pruning Ver 1.1.0
-
+# Automatic Pruning Ver 1.1.0   
+### [README 日本語版](https://github.com/FujitsuLaboratories/CAC/blob/main/cac/pruning/README_jp.md)  
+  
 Automatic Pruning is a Python module for pruning neural networks.
 This module has the following features.
 * The pruning rate of each layer can be determined automatically.
